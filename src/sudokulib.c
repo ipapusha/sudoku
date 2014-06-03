@@ -1,5 +1,7 @@
 #include "sudokulib.h"
 #include <stdio.h> /* printf */
+#include <stdlib.h> /* malloc */
+#include <string.h> /* memcpy */
 #include <inttypes.h>
 #include <assert.h>
 
@@ -313,6 +315,8 @@ void calculate_cand(board_t *board)
 	int i, j;
 	uint8_t num;
 
+	assert(consistent(board));
+
 	for (i = 0; i < WIDTH; ++i) {
 		for (j = 0; j < WIDTH; ++j) {
 			num = board->pos[i][j];
@@ -324,6 +328,8 @@ void calculate_cand(board_t *board)
 			}
 		}
 	}
+
+	assert(consistent(board));
 }
 
 
@@ -337,10 +343,12 @@ int min_cand_rc(const board_t *board, int *row, int *col)
 	int count;
 	int min_count = WIDTH + 1;
 
+	assert(consistent(board));
+
 	for (i = 0; i < WIDTH; ++i) {
 		for (j = 0; j < WIDTH; ++j) {
 			count = count_cands(board, i, j);
-			if (count && count < min_count) {
+			if (count && (count < min_count)) {
 				min_count = count;
 				*row = i;
 				*col = j;
@@ -389,6 +397,71 @@ void solve_upto_branch(board_t *board)
 	}
 }
 
+void solve(board_t *board, bool initial_solve)
+{
+	int i,j;
+	uint8_t num;
+	int count;
+	board_t board_saved;
+
+	/* only run initial solve once */
+	if (initial_solve) {
+		calculate_cand(board);
+	}
+	
+	/* main solving loop */
+	while((count = min_cand_rc(board, &i, &j)) != -1) {
+		/* determine first candidate remaining */
+		for (num = 1; num <= WIDTH; ++num) {
+			if (is_cand(board, num, i, j)) {
+				break;
+			}
+		}
+		assert(num <= WIDTH);
+		
+		if (count == 1) {
+			/* square is determined */
+			
+			/* knock out neighbors */
+			clear_all_cands_at(board, i, j);
+			knockout_cand_row(board, num, i);
+			knockout_cand_col(board, num, j);
+			knockout_cand_box(board, num, rc2box(i,j));
+
+			/* set square */
+			board->pos[i][j] = num;
+		} else {
+			/* several candidates exist */
+			memcpy(&board_saved, board, sizeof(board_t));
+			assert(memcmp(&board_saved, board, sizeof(board_t)) == 0);
+			
+			/* knock out neighbors */
+			clear_all_cands_at(board, i, j);
+			knockout_cand_row(board, num, i);
+			knockout_cand_col(board, num, j);
+			knockout_cand_box(board, num, rc2box(i,j));
+
+			/* set square */
+			board->pos[i][j] = num;
+
+			/* recurse */
+			solve(board, false);
+			
+			if (solved(board)) {
+				/* solved */
+				return;
+			} else {
+				/* not solved, restore state */
+				memcpy(board, &board_saved, sizeof(board_t));
+				assert(memcmp(&board_saved, board, sizeof(board_t)) == 0);
+
+				/* eliminate candidate from current square */
+				clear_cand(board, num, i, j);
+			}
+		}
+	}
+}
+
 void set_easy_board(board_t *board) 
 {
 	int i,j;
@@ -424,6 +497,28 @@ void set_hard_board(board_t *board)
 		{0, 0, 9, 6, 7, 0, 0, 5, 0},
 		{0, 0, 0, 8, 0, 0, 0, 0, 0},
 		{0, 0, 2, 0, 9, 4, 0, 0, 7}
+	};
+
+	for (i = 0; i < WIDTH; ++i) {
+		for (j = 0; j < WIDTH; ++j) {
+			board->pos[i][j] = (uint8_t)arr[i][j];
+		}
+	}
+}
+
+void set_hard_board2(board_t *board) 
+{
+	int i,j;
+	int arr[WIDTH][WIDTH] = {
+		{0, 0, 0, 0, 0, 5, 0, 3, 4},
+		{0, 1, 5, 0, 2, 0, 9, 0, 0},
+		{3, 0, 0, 0, 0, 0, 0, 7, 0},
+		{0, 0, 0, 0, 5, 3, 0, 0, 0},
+		{4, 6, 2, 0, 0, 0, 3, 1, 5},
+		{0, 0, 0, 2, 4, 0, 0, 0, 0},
+		{0, 5, 0, 0, 0, 0, 0, 0, 8},
+		{0, 0, 3, 0, 9, 0, 7, 5, 0},
+		{9, 4, 0, 5, 0, 0, 0, 0, 0}
 	};
 
 	for (i = 0; i < WIDTH; ++i) {

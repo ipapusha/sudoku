@@ -1,5 +1,3 @@
-
-
 #include <stdio.h>	/* printf */
 #include <stdlib.h> /* exit, malloc */
 #include <assert.h>
@@ -17,6 +15,24 @@ void print_versioninfo(void)
 #else
 	printf("debug enabled\n");
 #endif
+}
+
+void print_candidates(board_t *board)
+{
+	int i, j;
+	uint8_t num;
+
+	for (i = 0; i < WIDTH; ++i) {
+		for (j = 0; j < WIDTH; ++j) {
+			printf("(%d,%d) (%d) : ", i, j, count_cands(board, i, j));
+			for (num = 1; num <= WIDTH; ++num) {
+				if (is_cand(board, num, i, j)) {
+					printf("%" PRIu8 " ", num);
+				}
+			}
+			printf("\n");
+		}
+	}
 }
 
 void test_board(void)
@@ -59,17 +75,7 @@ void test_board(void)
 
 	printf("Candidates:\n");
 	calculate_cand(&board);
-	for (i = 0; i < WIDTH; ++i) {
-		for (j = 0; j < WIDTH; ++j) {
-			printf("(%d,%d) (%d) : ", i, j, count_cands(&board, i, j));
-			for (num = 1; num <= WIDTH; ++num) {
-				if (is_cand(&board, num, i, j)) {
-					printf("%" PRIu8 " ", num);
-				}
-			}
-			printf("\n");
-		}
-	}
+	print_candidates(&board);
 
 	printf("Solving up to first branch...\n");
 	solve_upto_branch(&board);
@@ -79,9 +85,28 @@ void test_board(void)
 
 	if (solved(&board)) {
 		printf("solved\n");
+		assert(min_cand_rc(&board, &i, &j) == -1);
 	} else {
 		printf("need to branch\n");
 	}
+}
+
+void test_solve(void)
+{
+	board_t board;
+	
+	set_hard_board2(&board);
+	printf("input board:\n");
+	print_board(&board);
+	assert(consistent(&board));
+	
+	printf("solving...\n");
+	solve(&board, true);
+	assert(consistent(&board));
+
+	printf("solution:\n");
+	print_board(&board);
+	print_candidates(&board);
 }
 
 int main(int argc, char **argv)
@@ -111,7 +136,8 @@ int main(int argc, char **argv)
 	if (tflag) {
 		printf("Testing...\n");
 		printf("Board size: %lu bytes\n", sizeof(board_t));
-		test_board();
+		/*test_board();*/
+		test_solve();
 	}
 
 	return 0;

@@ -51,11 +51,13 @@ bool solved(const board_t *board);		/* ignores cand */
 void calculate_cand(board_t *board);
 int min_cand_rc(const board_t *board, int *row, int *col);
 void solve_upto_branch(board_t *board);
+void solve(board_t *board, bool initial_solve);
 /* TODO: consistent_fast, solved_fast */
 
 /* IO functions */
 void set_easy_board(board_t *board);
 void set_hard_board(board_t *board);
+void set_hard_board2(board_t *board);
 void print_board(const board_t *board);
 
 
