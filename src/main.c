@@ -19,13 +19,15 @@ void print_versioninfo(void)
 #endif
 }
 
-void test_easyboard(void)
+void test_board(void)
 {
 	int i,j;
 	uint8_t num;
 	board_t board;
 	
-	set_easy_board(&board);
+	/* set_easy_board(&board); */
+	set_hard_board(&board);
+
 	print_board(&board);
 	assert(consistent(&board));
 	assert(!solved(&board));
@@ -59,7 +61,7 @@ void test_easyboard(void)
 	calculate_cand(&board);
 	for (i = 0; i < WIDTH; ++i) {
 		for (j = 0; j < WIDTH; ++j) {
-			printf("(%d,%d) : ", i, j);
+			printf("(%d,%d) (%d) : ", i, j, count_cands(&board, i, j));
 			for (num = 1; num <= WIDTH; ++num) {
 				if (is_cand(&board, num, i, j)) {
 					printf("%" PRIu8 " ", num);
@@ -67,6 +69,18 @@ void test_easyboard(void)
 			}
 			printf("\n");
 		}
+	}
+
+	printf("Solving up to first branch...\n");
+	solve_upto_branch(&board);
+	print_board(&board);
+
+	assert(consistent(&board));
+
+	if (solved(&board)) {
+		printf("solved\n");
+	} else {
+		printf("need to branch\n");
 	}
 }
 
@@ -97,7 +111,7 @@ int main(int argc, char **argv)
 	if (tflag) {
 		printf("Testing...\n");
 		printf("Board size: %lu bytes\n", sizeof(board_t));
-		test_easyboard();
+		test_board();
 	}
 
 	return 0;

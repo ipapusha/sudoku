@@ -35,6 +35,7 @@ int count_num_row(const board_t *board, uint8_t num, int row);
 int count_num_col(const board_t *board, uint8_t num, int col);
 int count_num_box(const board_t *board, uint8_t num, int box);
 bool is_cand(const board_t *board, uint8_t num, int row, int col);
+int count_cands(const board_t *board, int row, int col);
 void allow_cand(board_t *board, uint8_t num, int row, int col);
 void clear_cand(board_t *board, uint8_t num, int row, int col);
 void clear_all_cands_at(board_t *board, int row, int col);
@@ -48,6 +49,8 @@ void knockout_cand_box(board_t *board, uint8_t num, int box);
 bool consistent(const board_t *board);	/* ignores cand */
 bool solved(const board_t *board);		/* ignores cand */
 void calculate_cand(board_t *board);
+int min_cand_rc(const board_t *board, int *row, int *col);
+void solve_upto_branch(board_t *board);
 /* TODO: consistent_fast, solved_fast */
 
 /* IO functions */

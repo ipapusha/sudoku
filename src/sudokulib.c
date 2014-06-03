@@ -137,7 +137,25 @@ bool is_cand(const board_t *board, uint8_t num, int row, int col)
 	assert(valid_num(num));
 	assert(valid_idx(row));
 	assert(valid_idx(col));
+	
 	return !(board->cand[row][col] & ((uint_least16_t)1 << num));
+}
+
+int count_cands(const board_t *board, int row, int col)
+{
+	int num;
+	int count = 0;
+
+	assert(valid_idx(row));
+	assert(valid_idx(col));
+
+	for (num = 1; num <= WIDTH; ++num) {
+		if (is_cand(board, num, row, col)) {
+			++count;
+		}
+	}
+
+	return count;
 }
 
 void allow_cand(board_t *board, uint8_t num, int row, int col)
@@ -145,7 +163,7 @@ void allow_cand(board_t *board, uint8_t num, int row, int col)
 	assert(valid_num(num));
 	assert(valid_idx(row));
 	assert(valid_idx(col));
-
+	
 	board->cand[row][col] &= ~((uint_least16_t)1 << num);
 }
 
@@ -263,7 +281,7 @@ bool solved(const board_t *board)
 	/* check each row */
 	for (i = 0; i < WIDTH; ++i) {
 		for (num = 1; num <= WIDTH; ++num) {
-			if (count_num_row(board, num, i) == 1) {
+			if (count_num_row(board, num, i) != 1) {
 				return false;
 			}
 		}
@@ -272,7 +290,7 @@ bool solved(const board_t *board)
 	/* check each col */
 	for (j = 0; j < WIDTH; ++j) {
 		for (num = 1; num <= WIDTH; ++num) {
-			if (count_num_col(board, num, j) == 1) {
+			if (count_num_col(board, num, j) != 1) {
 				return false;
 			}
 		}
@@ -281,7 +299,7 @@ bool solved(const board_t *board)
 	/* check each box */
 	for (k = 0; k < WIDTH; ++k) {
 		for (num = 1; num <= WIDTH; ++num) {
-			if (count_num_box(board, num, k) == 1) {
+			if (count_num_box(board, num, k) != 1) {
 				return false;
 			}
 		}
@@ -305,6 +323,69 @@ void calculate_cand(board_t *board)
 				knockout_cand_box(board, num, rc2box(i,j));
 			}
 		}
+	}
+}
+
+
+/* set (*row) and (*col) to an index with the smallest 
+ * nonzero number of candidates and returns the number 
+ * of candidates at that index (or -1 if not defined)
+ */
+int min_cand_rc(const board_t *board, int *row, int *col)
+{
+	int i,j;
+	int count;
+	int min_count = WIDTH + 1;
+
+	for (i = 0; i < WIDTH; ++i) {
+		for (j = 0; j < WIDTH; ++j) {
+			count = count_cands(board, i, j);
+			if (count && count < min_count) {
+				min_count = count;
+				*row = i;
+				*col = j;
+				/* short-circuit */
+				if (count == 1) {
+					return count;
+				}
+			}
+		}
+	}
+	
+	if (min_count == WIDTH + 1) {
+		*row = -1;
+		*col = -1;
+		return -1;
+	} 
+	return min_count;
+}
+
+void solve_upto_branch(board_t *board)
+{
+	int i,j;
+	uint8_t num;
+
+	/* initial solve */
+	calculate_cand(board);
+
+	/* continue solving if possible */
+	while(min_cand_rc(board, &i, &j) == 1) {
+		/* determine single candidate remaining */
+		for (num = 1; num <= WIDTH; ++num) {
+			if (is_cand(board, num, i, j)) {
+				break;
+			}
+		}
+		assert(num <= WIDTH);
+		
+		/* square is determined */
+		clear_all_cands_at(board, i, j);
+		knockout_cand_row(board, num, i);
+		knockout_cand_col(board, num, j);
+		knockout_cand_box(board, num, rc2box(i,j));
+		
+		/* set square */
+		board->pos[i][j] = num;
 	}
 }
 
