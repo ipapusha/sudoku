@@ -1,4 +1,6 @@
 #include "sudokulib.h"
+#include <stdio.h> /* printf */
+#include <inttypes.h>
 #include <assert.h>
 
 bool valid_idx(int idx) 
@@ -6,12 +8,12 @@ bool valid_idx(int idx)
 	return (0 <= idx) && (idx < WIDTH);
 }
 
-bool valid_num(char num)
+bool valid_num(uint8_t num)
 {
 	return (1 <= num) && (num <= WIDTH);
 }
 
-int box_row(int box) 
+int box2row(int box) 
 {
 	assert(valid_idx(box));
 	switch (box) {
@@ -36,7 +38,7 @@ int box_row(int box)
 	return -1;
 }
 
-int box_col(int box)
+int box2col(int box)
 {
 	assert(valid_idx(box));
 	switch (box) {
@@ -61,7 +63,23 @@ int box_col(int box)
 	return -1;
 }
 
-int count_num_row(board_t board, char num, int row)
+int rc2box(int row, int col)
+{
+	int box;
+
+	assert(valid_idx(row));
+	assert(valid_idx(col));
+
+	box = (row / 3) * 3 + (col / 3);
+	
+	assert(valid_idx(box));
+	assert(box2row(box) <= row && row < box2row(box) + BOXWIDTH);
+	assert(box2col(box) <= col && col < box2col(box) + BOXWIDTH);
+
+	return box;
+}
+
+int count_num_row(const board_t *board, uint8_t num, int row)
 {
 	int j;
 	int count = 0;
@@ -69,7 +87,7 @@ int count_num_row(board_t board, char num, int row)
 	assert(valid_idx(row));
 
 	for (j = 0; j < WIDTH; ++j) {
-		if (board[row][j] == num) {
+		if (board->pos[row][j] == num) {
 			++count;
 		}
 	}
@@ -77,7 +95,7 @@ int count_num_row(board_t board, char num, int row)
 	return count;
 }
 
-int count_num_col(board_t board, char num, int col)
+int count_num_col(const board_t *board, uint8_t num, int col)
 {
 	int i;
 	int count = 0;
@@ -85,7 +103,7 @@ int count_num_col(board_t board, char num, int col)
 	assert(valid_idx(col));
 
 	for (i = 0; i < WIDTH; ++i) {
-		if (board[i][col] == num) {
+		if (board->pos[i][col] == num) {
 			++count;
 		}
 	}
@@ -93,20 +111,19 @@ int count_num_col(board_t board, char num, int col)
 	return count;
 }
 
-int count_num_box(board_t board, char num, int box)
+int count_num_box(const board_t *board, uint8_t num, int box)
 {
-	int i, j;
-	int i0, j0; 
+	int i,j;
+	int row, col;
 	int count = 0;
 
 	assert(valid_idx(box));
+	row = box2row(box);
+	col = box2col(box);
 
-	i0 = box_row(box);
-	j0 = box_col(box);
-
-	for (i = i0; i < i0 + BOXWIDTH; ++i) {
-		for (j = j0; j < j0 + BOXWIDTH; ++j) {
-			if (board[i][j] == num) {
+	for (i = row; i < row + BOXWIDTH; ++i) {
+		for (j = col; j < col + BOXWIDTH; ++j) {
+			if (board->pos[i][j] == num) {
 				++count;
 			}
 		}
@@ -115,36 +132,183 @@ int count_num_box(board_t board, char num, int box)
 	return count;
 }
 
-bool check_consistency(board_t board)
+bool is_cand(const board_t *board, uint8_t num, int row, int col)
 {
-	int i,j,k;
-	char num;
+	assert(valid_num(num));
+	assert(valid_idx(row));
+	assert(valid_idx(col));
+	return !(board->cand[row][col] & ((uint_least16_t)1 << num));
+}
+
+void allow_cand(board_t *board, uint8_t num, int row, int col)
+{
+	assert(valid_num(num));
+	assert(valid_idx(row));
+	assert(valid_idx(col));
+
+	board->cand[row][col] &= ~((uint_least16_t)1 << num);
+}
+
+void clear_cand(board_t *board, uint8_t num, int row, int col)
+{
+	assert(valid_num(num));
+	assert(valid_idx(row));
+	assert(valid_idx(col));
+
+	board->cand[row][col] |= ((uint_least16_t)1 << num);
+}
+
+void clear_all_cands_at(board_t *board, int row, int col)
+{
+	uint8_t num;
 	for (num = 1; num <= WIDTH; ++num) {
-		/* check each row */
-		for (i = 0; i < WIDTH; ++i) {
+		clear_cand(board, num, row, col);
+	}
+}
+
+void board_init(board_t *board) 
+{
+	int i,j;
+	uint8_t num;
+
+	for (i = 0; i < WIDTH; ++i) {
+		for (j = 0; j < WIDTH; ++j) {
+			for (num = 1; num <= WIDTH; ++num) {
+				allow_cand(board, num, i, j);
+				assert(is_cand(board, num, i, j));
+			}
+		}
+	}
+}
+
+void knockout_cand(board_t *board, uint8_t num, int row, int col)
+{
+	assert(valid_num(num));
+	assert(valid_idx(row));
+	assert(valid_idx(col));
+
+	board->cand[row][col] |= (1 << num);
+}
+
+void knockout_cand_row(board_t *board, uint8_t num, int row)
+{
+	int j;
+	for (j = 0; j < WIDTH; ++j) {
+		knockout_cand(board, num, row, j);
+	}
+}
+
+void knockout_cand_col(board_t *board, uint8_t num, int col)
+{
+	int i;
+	for (i = 0; i < WIDTH; ++i) {
+		knockout_cand(board, num, i, col);
+	}
+}
+
+void knockout_cand_box(board_t *board, uint8_t num, int box)
+{
+	int i,j;
+	int row, col;
+
+	row = box2row(box);
+	col = box2col(box);
+	for (i = row; i < row + BOXWIDTH; ++i) {
+		for (j = col; j < col + BOXWIDTH; ++j) {
+			knockout_cand(board, num, i, j);
+		}
+	}
+}
+
+bool consistent(const board_t *board)
+{
+	int i, j, k;
+	uint8_t num;
+	
+	/* check each row */
+	for (i = 0; i < WIDTH; ++i) {
+		for (num = 1; num <= WIDTH; ++num) {
 			if (count_num_row(board, num, i) > 1) {
 				return false;
 			}
 		}
-
-		/* check each col */
-		for (j = 0; j < WIDTH; ++j) {
+	}
+	
+	/* check each col */
+	for (j = 0; j < WIDTH; ++j) {
+		for (num = 1; num <= WIDTH; ++num) {
 			if (count_num_col(board, num, j) > 1) {
 				return false;
 			}
 		}
+	}
 
-		/* check each box */
-		for (k = 0; k < WIDTH; ++k) {
+	/* check each box */
+	for (k = 0; k < WIDTH; ++k) {
+		for (num = 1; num <= WIDTH; ++num) {
 			if (count_num_box(board, num, k) > 1) {
 				return false;
 			}
 		}
 	}
+
 	return true;
 }
 
-void set_easy_board(board_t board) 
+bool solved(const board_t *board)
+{
+	int i, j, k;
+	uint8_t num;
+	
+	/* check each row */
+	for (i = 0; i < WIDTH; ++i) {
+		for (num = 1; num <= WIDTH; ++num) {
+			if (count_num_row(board, num, i) == 1) {
+				return false;
+			}
+		}
+	}
+	
+	/* check each col */
+	for (j = 0; j < WIDTH; ++j) {
+		for (num = 1; num <= WIDTH; ++num) {
+			if (count_num_col(board, num, j) == 1) {
+				return false;
+			}
+		}
+	}
+
+	/* check each box */
+	for (k = 0; k < WIDTH; ++k) {
+		for (num = 1; num <= WIDTH; ++num) {
+			if (count_num_box(board, num, k) == 1) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+void calculate_cand(board_t *board)
+{
+	int i, j;
+	uint8_t num;
+
+	for (i = 0; i < WIDTH; ++i) {
+		for (j = 0; j < WIDTH; ++j) {
+			num = board->pos[i][j];
+			if (num) {
+				clear_all_cands_at(board, i, j);
+				knockout_cand_row(board, num, i);
+				knockout_cand_col(board, num, j);
+				knockout_cand_box(board, num, rc2box(i,j));
+			}
+		}
+	}
+}
+
+void set_easy_board(board_t *board) 
 {
 	int i,j;
 	int arr[WIDTH][WIDTH] = {
@@ -161,12 +325,12 @@ void set_easy_board(board_t board)
 
 	for (i = 0; i < WIDTH; ++i) {
 		for (j = 0; j < WIDTH; ++j) {
-			board[i][j] = (char)arr[i][j];
+			board->pos[i][j] = (uint8_t)arr[i][j];
 		}
 	}
 }
 
-void set_hard_board(board_t board) 
+void set_hard_board(board_t *board) 
 {
 	int i,j;
 	int arr[WIDTH][WIDTH] = {
@@ -183,8 +347,25 @@ void set_hard_board(board_t board)
 
 	for (i = 0; i < WIDTH; ++i) {
 		for (j = 0; j < WIDTH; ++j) {
-			board[i][j] = (char)arr[i][j];
+			board->pos[i][j] = (uint8_t)arr[i][j];
 		}
 	}
 }
 
+void print_board(const board_t *board)
+{
+	int i,j;
+	uint8_t num;
+
+	for (i = 0; i < WIDTH; ++i) {
+		for (j = 0; j < WIDTH; ++j) {
+			num = board->pos[i][j];
+			if (num) {
+				printf("%" PRIu8 " ", board->pos[i][j]);
+			} else {
+				printf(". ");
+			}
+		}
+		printf("\n");
+	}
+}
