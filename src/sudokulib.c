@@ -218,6 +218,8 @@ int simplify(state_t *board)
 	int npasses = 0;
 	bool simplify_again = true;
 
+	assert( valid_board(board) );
+
 	while (simplify_again) {
 		/* simplify pass */
 		npasses += 1;

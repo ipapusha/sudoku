@@ -1,5 +1,5 @@
 #include <stdio.h>	/* printf */
-#include <stdlib.h> /* exit */
+#include <stdlib.h> /* exit, atoi */
 #include <getopt.h> /* getopt */
 #include <assert.h>
 #include "sudokulib.h"
@@ -20,38 +20,38 @@ void print_versioninfo(void)
 #endif
 }
 
-void run_tests(void)
+void run_tests(int puzzle_no)
 {
-	state_t board0;
+	state_t board;
 	int i, j;
 	int npasses;
 
-	board0 = sample_state(1);
+	board = sample_state(puzzle_no);
 	printf("board:\n");
-	print_state(&board0);
+	print_state(&board);
 	printf("\n");
 
 	printf("num allowed:\n");
 	for (i = 0; i < N; ++i) {
 		for (j = 0; j < N; ++j) {
-			printf("%d ", num_allowed(&board0, i, j));
-			assert( IMPLIES(board0.val[i][j] == 0, num_allowed(&board0, i, j) == 9) );
-			assert( IMPLIES(board0.val[i][j] != 0, num_allowed(&board0, i, j) == 1) );
+			printf("%d ", num_allowed(&board, i, j));
+			assert( IMPLIES(board.val[i][j] == 0, num_allowed(&board, i, j) == 9) );
+			assert( IMPLIES(board.val[i][j] != 0, num_allowed(&board, i, j) == 1) );
 		}
 		printf("\n");
 	}
 	printf("\n");
 	
-	npasses = simplify(&board0);
+	npasses = simplify(&board);
 
 	printf("board (after %d passes):\n", npasses);
-	print_state(&board0);
+	print_state(&board);
 	printf("\n");
 
 	printf("num allowed (after %d passes):\n", npasses);
 	for (i = 0; i < N; ++i) {
 		for (j = 0; j < N; ++j) {
-			printf("%d ", num_allowed(&board0, i, j));
+			printf("%d ", num_allowed(&board, i, j));
 		}
 		printf("\n");
 	}
@@ -61,15 +61,18 @@ int main(int argc, char **argv)
 {
 	int vflag = 0;
 	int tflag = 0;
+	char *tvalue = NULL;
+	int puzzle_no = 0;
 	int c;
 
-	while ((c = getopt(argc, argv, "vt")) != -1) {
+	while ((c = getopt(argc, argv, "vt:")) != -1) {
 		switch (c) {
 			case 'v': 
 				vflag = 1; 
 				break;
 			case 't': 
 				tflag = 1; 
+				tvalue = optarg;
 				break;
 			default:
 				break;
@@ -82,7 +85,9 @@ int main(int argc, char **argv)
 	}
 
 	if (tflag) {
-		run_tests();
+		puzzle_no = atoi(tvalue);
+		printf("testing puzzle number: %d\n", puzzle_no);
+		run_tests(puzzle_no);
 	}
 
 	return EXIT_SUCCESS;
