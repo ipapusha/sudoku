@@ -3,12 +3,38 @@
 #include <stdio.h> /* printf */
 
 /* debug features */
+#define IMPLIES(a, b) ((!(a)) || (b))
+
 bool valid_index(int i, int j) {
 	return (0 <= i && i < N && 0 <= j && j < N);
 }
 
 bool valid_val(int val) {
 	return (1 <= val && val <= N);
+}
+
+bool valid_board(const state_t *board) 
+{
+	int i, j, val, nallowed;
+
+	/* check null pointer */
+	if (!board) {
+		return false;
+	}
+	
+	/* check consistency of alloweds */
+	for (i = 0; i < N; ++i) {
+		for (j = 0; j < N; ++j) {
+			val = board->val[i][j];
+			nallowed = num_allowed(board, i, j);
+			
+			if (!(0 <= val && val <= 9)) 
+				return false;
+			if (!IMPLIES(val == 0, 1 <= nallowed && nallowed <= 9)) 
+				return false;
+		}
+	}
+	return true;
 }
 
 /* implementations */
@@ -119,6 +145,106 @@ state_t sample_state(int puzzle_no) {
 	}
 	
 	return board;
+}
+
+/* solving */
+int num_allowed(const state_t *board, int i, int j)
+{
+	int num = 0;
+	int val;
+	assert( valid_index(i, j) );
+
+	for (val = 1; val <= N; ++val) {
+		if (is_allowed(board, i, j, val)) {
+			++num;
+		}
+	}
+
+	assert (0 <= num && num <= 9);
+	return num;
+}
+
+int first_allowed(const state_t *board, int i, int j)
+{
+	int val;
+	assert( valid_index(i, j) );
+	
+	for (val = 1; val <= N; ++val) {
+		if (is_allowed(board, i, j, val)) {
+			return val;
+		}
+	}
+	return 0; /* none allowed */
+}
+
+void knockout(state_t *board, const int i, const int j, const int val)
+{
+	int r, c;
+	int lo_r, lo_c;
+
+	assert( valid_index(i, j) );
+	assert( valid_val(val) );
+	assert( valid_board(board) );
+
+	/* knockout row */
+	for (c = 0; c < N; ++c) {
+		if (c == j) 
+			continue;
+		disallow(board, i, c, val);
+	}
+
+	/* knockout column */
+	for (r = 0; r < N; ++r) {
+		if (r == i) 
+			continue;
+		disallow(board, r, j, val);
+	}
+
+	/* knockout block */
+	lo_r = M*(i / M);  assert(lo_r == 0 || lo_r == 3 || lo_r == 6);
+	lo_c = M*(j / M);  assert(lo_c == 0 || lo_c == 3 || lo_c == 6);
+	for (r = lo_r; r < lo_r + M; ++r) {
+		for (c = lo_c; c < lo_c + M; ++c) {
+			if (r == i && c == j)
+				continue;
+			disallow(board, r, c, val);
+		}
+	}
+}
+
+int simplify(state_t *board)
+{
+	int i, j;
+	int npasses = 0;
+	bool simplify_again = true;
+
+	while (simplify_again) {
+		/* simplify pass */
+		npasses += 1;
+		for (i = 0; i < N; ++i) {
+			for (j = 0; j < N; ++j) {
+				if (board->val[i][j] != 0) {
+					/* given found */
+					knockout(board, i, j, board->val[i][j]);
+					set_given_disallow_others(board, i, j, board->val[i][j]);
+				}
+			}
+		}
+
+		/* check pass */
+		simplify_again = false;
+		for (i = 0; i < N; ++i) {
+			for (j = 0; j < N; ++j) {
+				if (board->val[i][j] == 0 && num_allowed(board, i, j) == 1) {
+					/* only one possible value */
+					board->val[i][j] = first_allowed(board, i, j);
+					assert( valid_val(board->val[i][j]) );
+					simplify_again = true;
+				}
+			}
+		}
+	}
+	return npasses;
 }
 
 /* IO */
