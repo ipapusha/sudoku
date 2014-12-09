@@ -43,9 +43,9 @@ void set_allowed(state_t *board, int i, int j, int val, bool allow_flag) {
 	assert( valid_val(val) );
 
 	if (allow_flag) {
-		board->allowed[i][j] |= ((unsigned)1 << val);
+		board->allowed[i][j] |= ((uint_least16_t)1 << val);
 	} else {
-		board->allowed[i][j] &= ~((unsigned)1 << val);
+		board->allowed[i][j] &= ~((uint_least16_t)1 << val);
 	}
 }
 
@@ -53,7 +53,7 @@ bool is_allowed(const state_t *board, int i, int j, int val) {
 	assert( valid_index(i, j) );
 	assert( valid_val(val) );
 	
-	return (board->allowed[i][j] & ((unsigned)1 << val));
+	return (board->allowed[i][j] & ((uint_least16_t)1 << val));
 }
 
 void allow(state_t *board, int i, int j, int val) {
@@ -264,6 +264,111 @@ int simplify(state_t *board)
 	}
 	return npasses;
 }
+
+int solve(state_t *board)
+{
+	int i, j, val;
+	state_t board_save;
+
+	if (!valid_board(board)) {
+		return -1;
+	}
+	if (simplify(board) == -1) {
+		return -1;
+	}
+	if (is_solved(board)) {
+		return 1;
+	}
+
+	/* try in order */
+	for (i = 0; i < N; ++i) {
+		for (j = 0; j < N; ++j) {
+
+			while (num_allowed(board, i, j) > 1) {
+				/* save state */
+				board_save = *board;
+
+				/* try a value */
+				val = first_allowed(board, i, j);
+				/* printf("trying (%d,%d):%d\n", i, j, val); */
+				set_given_disallow_others(board, i, j, val);
+
+				if( solve(board) == -1 ) {
+					/* restore state */
+					*board = board_save;
+					disallow(board, i, j, val);
+				} else {
+					return 1;
+				}
+			}
+
+		}
+	}
+
+	return -1;
+}
+
+bool is_solved(const state_t *board)
+{
+	int i, j, val;
+	int lo_r, lo_c;
+	uint_least16_t used = 0;
+	
+	/* check rows */
+	for (i = 0; i < N; ++i) {
+		used = 0;
+		for (j = 0; j < N; ++j) {
+			val = board->val[i][j];
+			if (valid_val(val)) {
+				used |= ((uint_least16_t)1 << val);
+			} else {
+				return false;
+			}
+		}
+		if (used != 0x3FE) {
+			return false;
+		}
+	}
+	
+	/* check cols */
+	for (j = 0; j < N; ++j) {
+		used = 0;
+		for (i = 0; i < N; ++i) {
+			val = board->val[i][j];
+			if (valid_val(val)) {
+				used |= ((uint_least16_t)1 << val);
+			} else {
+				return false;
+			}
+		}
+		if (used != 0x3FE) {
+			return false;
+		}
+	}
+
+	/* check blocks */
+	for (lo_r = 0; lo_r <= N-M; lo_r += M) {
+		for (lo_c = 0; lo_c <= N-M; lo_c += M) {
+			used = 0;
+			for (i = lo_r; i < lo_r + M; ++i) {
+				for (j = lo_c; j < lo_c + M; ++j) {
+					val = board->val[i][j];
+					if (valid_val(val)) {
+						used |= ((uint_least16_t)1 << val);
+					} else {
+						return false;
+					}
+				}
+			}
+			if (used != 0x3FE) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
 
 /* IO */
 void print_state(const state_t *board)

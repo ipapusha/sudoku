@@ -55,6 +55,18 @@ void run_tests(int puzzle_no)
 		}
 		printf("\n");
 	}
+
+	printf("solving...");
+	solve(&board);
+	printf("done\n");
+
+	if (is_solved(&board)) {
+		printf("puzzle solved:\n");
+		print_state(&board);
+	} else {
+		printf("puzzle not solved:\n");
+		print_state(&board);
+	}
 }
 
 int main(int argc, char **argv)

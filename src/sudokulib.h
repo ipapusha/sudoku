@@ -30,6 +30,8 @@ int num_allowed(const state_t *board, int i, int j);
 int first_allowed(const state_t *board, int i, int j);
 void knockout(state_t *board, int i, int j, int val); /* modifies all but i,j */
 int simplify(state_t *board);
+int solve(state_t *board);
+bool is_solved(const state_t *board);
 
 /* IO */
 void print_state(const state_t *board);
