@@ -6,9 +6,26 @@
 
 #define N 9
 
-typedef struct board_t {
-	uint8_t pos[N][N]; 
-	uint_least16_t cand[N][N];
-} board_t;
+typedef struct state_t {
+	uint8_t val[N][N]; 
+	uint_least16_t allowed[N][N];
+} state_t;
+
+/* state manipulation */
+void set_allowed(state_t *board, int i, int j, int val, bool allow_flag);
+bool is_allowed(const state_t *board, int i, int j, int val);
+void allow(state_t *board, int i, int j, int val);
+void disallow(state_t *board, int i, int j, int val);
+
+void set_given(state_t *board, int i, int j, int val);
+void set_given_disallow_others(state_t *board, int i, int j, int val);
+
+/* initialization */
+state_t blank_state(void);
+state_t easy_state(void);
+state_t hard_state(void);
+
+/* IO */
+void print_state(const state_t *board);
 
 #endif
