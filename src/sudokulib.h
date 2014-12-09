@@ -22,8 +22,7 @@ void set_given_disallow_others(state_t *board, int i, int j, int val);
 
 /* initialization */
 state_t blank_state(void);
-state_t easy_state(void);
-state_t hard_state(void);
+state_t sample_state(int puzzle_no);
 
 /* IO */
 void print_state(const state_t *board);

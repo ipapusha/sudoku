@@ -76,55 +76,44 @@ state_t blank_state(void) {
 	return board;
 }
 
-state_t easy_state(void) {
+state_t sample_state(int puzzle_no) {
 	int i, j;
 	state_t board;
-	/* websudoku level 1 Easy Puzzle 7,254,987,681 */
-	uint8_t vals[N][N] = {
-		{0, 9, 0,  7, 3, 1,  0, 0, 0},
-		{0, 6, 0,  0, 0, 0,  1, 0, 0},
-		{1, 0, 3,  6, 5, 2,  0, 0, 0},
-		{9, 0, 1,  3, 6, 7,  0, 0, 4},
-		{3, 0, 0,  0, 0, 0,  0, 0, 5},
-		{6, 0, 0,  1, 4, 5,  3, 0, 9},
-		{0, 0, 0,  4, 7, 3,  8, 0, 6},
-		{0, 0, 2,  0, 0, 0,  0, 3, 0},
-		{0, 0, 0,  5, 2, 8,  0, 4, 0}
-	};
-
-	board = blank_state();
-	for (i = 0; i < N; ++i) {
-		for (j = 0; j < N; ++j) {
-			if (vals[i][j]) {
-				set_given_disallow_others(&board, i, j, vals[i][j]);
-			}
+	uint8_t puzzles[][N][N] = {
+		/* websudoku level 1 Easy Puzzle 7,254,987,681 */
+		{
+			{0, 9, 0,  7, 3, 1,  0, 0, 0},
+			{0, 6, 0,  0, 0, 0,  1, 0, 0},
+			{1, 0, 3,  6, 5, 2,  0, 0, 0},
+			{9, 0, 1,  3, 6, 7,  0, 0, 4},
+			{3, 0, 0,  0, 0, 0,  0, 0, 5},
+			{6, 0, 0,  1, 4, 5,  3, 0, 9},
+			{0, 0, 0,  4, 7, 3,  8, 0, 6},
+			{0, 0, 2,  0, 0, 0,  0, 3, 0},
+			{0, 0, 0,  5, 2, 8,  0, 4, 0}
+		},
+		/* websudoku level 3 Hard Puzzle 7,865,698,460 */
+		{
+			{0, 0, 0,  0, 0, 5,  0, 3, 4},
+			{0, 1, 5,  0, 2, 0,  9, 0, 0},
+			{3, 0, 0,  0, 0, 0,  0, 7, 0},
+			{0, 0, 0,  0, 5, 3,  0, 0, 0},
+			{4, 6, 2,  0, 0, 0,  3, 1, 5},
+			{0, 0, 0,  2, 4, 0,  0, 0, 0},
+			{0, 5, 0,  0, 0, 0,  0, 0, 8},
+			{0, 0, 3,  0, 9, 0,  7, 5, 0},
+			{9, 4, 0,  5, 0, 0,  0, 0, 0}
 		}
-	}
-	
-	return board;
-}
-
-state_t hard_state(void) {
-	int i, j;
-	state_t board;
-	/* websudoku level 3 Hard Puzzle 7,865,698,460 */
-	uint8_t vals[N][N] = {
-		{0, 0, 0,  0, 0, 5,  0, 3, 4},
-		{0, 1, 5,  0, 2, 0,  9, 0, 0},
-		{3, 0, 0,  0, 0, 0,  0, 7, 0},
-		{0, 0, 0,  0, 5, 3,  0, 0, 0},
-		{4, 6, 2,  0, 0, 0,  3, 1, 5},
-		{0, 0, 0,  2, 4, 0,  0, 0, 0},
-		{0, 5, 0,  0, 0, 0,  0, 0, 8},
-		{0, 0, 3,  0, 9, 0,  7, 5, 0},
-		{9, 4, 0,  5, 0, 0,  0, 0, 0}
 	};
-
+	int npuzzles = sizeof(puzzles)/sizeof(puzzles[0]);
+	assert( npuzzles == 2 );
+	assert( 0 <= puzzle_no && puzzle_no < npuzzles );
+	
 	board = blank_state();
 	for (i = 0; i < N; ++i) {
 		for (j = 0; j < N; ++j) {
-			if (vals[i][j]) {
-				set_given_disallow_others(&board, i, j, vals[i][j]);
+			if (puzzles[puzzle_no][i][j]) {
+				set_given_disallow_others(&board, i, j, puzzles[puzzle_no][i][j]);
 			}
 		}
 	}

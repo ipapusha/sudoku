@@ -17,13 +17,13 @@ void print_versioninfo(void)
 
 void run_tests(void)
 {
-	state_t board1, board2;
+	state_t board0, board1;
 
-	board1 = easy_state();
-	board2 = hard_state();
-	print_state(&board1);
+	board0 = sample_state(0);
+	board1 = sample_state(1);
+	print_state(&board0);
 	printf("\n");
-	print_state(&board2);
+	print_state(&board1);
 }
 
 int main(int argc, char **argv)
