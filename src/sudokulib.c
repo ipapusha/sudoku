@@ -129,10 +129,21 @@ state_t sample_state(int puzzle_no) {
 			{0, 5, 0,  0, 0, 0,  0, 0, 8},
 			{0, 0, 3,  0, 9, 0,  7, 5, 0},
 			{9, 4, 0,  5, 0, 0,  0, 0, 0}
+		},
+		/* contradictory puzzle */
+		{
+			{0, 0, 0,  0, 0, 5,  0, 3, 4},
+			{0, 1, 5,  0, 2, 0,  9, 0, 0},
+			{3, 0, 0,  0, 0, 0,  1, 7, 0},
+			{0, 0, 0,  0, 5, 3,  0, 0, 0},
+			{4, 6, 2,  0, 0, 0,  3, 1, 5},
+			{0, 0, 0,  2, 4, 0,  0, 0, 0},
+			{0, 5, 0,  0, 0, 0,  0, 0, 8},
+			{0, 0, 3,  0, 9, 0,  7, 5, 0},
+			{9, 4, 0,  5, 0, 0,  0, 0, 0}
 		}
 	};
 	int npuzzles = sizeof(puzzles)/sizeof(puzzles[0]);
-	assert( npuzzles == 2 );
 	assert( 0 <= puzzle_no && puzzle_no < npuzzles );
 	
 	board = blank_state();
@@ -184,7 +195,7 @@ void knockout(state_t *board, const int i, const int j, const int val)
 
 	assert( valid_index(i, j) );
 	assert( valid_val(val) );
-	assert( valid_board(board) );
+	/* assert( valid_board(board) ); */
 
 	/* knockout row */
 	for (c = 0; c < N; ++c) {
@@ -217,6 +228,7 @@ int simplify(state_t *board)
 	int i, j;
 	int npasses = 0;
 	bool simplify_again = true;
+	int nallowed = 0;
 
 	assert( valid_board(board) );
 
@@ -237,7 +249,11 @@ int simplify(state_t *board)
 		simplify_again = false;
 		for (i = 0; i < N; ++i) {
 			for (j = 0; j < N; ++j) {
-				if (board->val[i][j] == 0 && num_allowed(board, i, j) == 1) {
+				nallowed = num_allowed(board, i, j);
+				if (nallowed == 0) {
+					return -1; /* contradiction reached */
+				}
+				if (board->val[i][j] == 0 && nallowed == 1) {
 					/* only one possible value */
 					board->val[i][j] = first_allowed(board, i, j);
 					assert( valid_val(board->val[i][j]) );
