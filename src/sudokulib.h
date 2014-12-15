@@ -36,4 +36,7 @@ bool is_solved(const state_t *board);
 /* IO */
 void print_state(const state_t *board);
 
+/* test macros */
+#define IMPLIES(a, b) ((!(a)) || (b))
+
 #endif

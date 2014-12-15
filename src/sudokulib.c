@@ -3,8 +3,6 @@
 #include <stdio.h> /* printf */
 
 /* debug features */
-#define IMPLIES(a, b) ((!(a)) || (b))
-
 bool valid_index(int i, int j) {
 	return (0 <= i && i < N && 0 <= j && j < N);
 }
@@ -143,8 +141,10 @@ state_t sample_state(int puzzle_no) {
 			{9, 4, 0,  5, 0, 0,  0, 0, 0}
 		}
 	};
-	int npuzzles = sizeof(puzzles)/sizeof(puzzles[0]);
+#ifndef NDEBUG
+	const int npuzzles = sizeof(puzzles)/sizeof(puzzles[0]);
 	assert( 0 <= puzzle_no && puzzle_no < npuzzles );
+#endif
 	
 	board = blank_state();
 	for (i = 0; i < N; ++i) {
